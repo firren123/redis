@@ -1,0 +1,116 @@
+#能够编排管理3个容器 php redis nginx
+version: "3.6"
+services: #服务
+    redis-master-1:
+        image: teacher_redis
+        container_name: redis-master-1
+        networks:
+            redis-network: #网络名称
+                ipv4_address: 192.168.3.11  #设置IP地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true # 标准输入输出
+        tty: true #标准输入输出 （和stdin_open成对出现）
+        ports:
+            - "6380:6379"
+        volumes:
+            - /Users/lichenjun/www/liuxin/redis1909/docker-compose/redis-sentinel/redis-master:/usr/src/redis/conf
+        command: ['/usr/local/bin/redis-server','/usr/src/redis/conf/redis.conf']
+
+        #COPY ./conf/redis.conf  /usr/src/redis/conf
+
+    redis-slave-1:
+        image: teacher_redis
+        container_name: redis-slave-1
+        networks:
+            redis-network: #网络名称
+                ipv4_address: 192.168.3.12  #设置IP地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true # 标准输入输出
+        tty: true #标准输入输出 （和stdin_open成对出现）
+        ports:
+            - "6381:6379"
+        links:
+            - redis-master-1
+        volumes:
+            - /Users/lichenjun/www/liuxin/redis1909/docker-compose/redis-sentinel/redis-slave-1:/usr/src/redis/conf
+#        command: /usr/bin/redis-server  /usr/src/redis/conf/redis.conf
+        command: ['/usr/local/bin/redis-server','/usr/src/redis/conf/redis.conf']
+
+    redis-slave-2:
+        image: teacher_redis
+        container_name: redis-slave-2
+        networks:
+            redis-network: #网络名称
+                ipv4_address: 192.168.3.13  #设置IP地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true # 标准输入输出
+        tty: true #标准输入输出 （和stdin_open成对出现）
+        ports:
+            - "6382:6379"
+        links:
+            - redis-master-1
+        volumes:
+            - /Users/lichenjun/www/liuxin/redis1909/docker-compose/redis-sentinel/redis-slave-2:/usr/src/redis/conf
+#        command: /usr/bin/redis-server  /usr/src/redis/conf/redis.conf
+        command: ['/usr/local/bin/redis-server','/usr/src/redis/conf/redis.conf']
+
+    redis-sentinel-1:
+        image: teacher_redis
+        container_name: redis-sentinel-1
+        networks:
+            redis-network: #网络名称
+                ipv4_address: 192.168.3.21  #设置IP地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true # 标准输入输出
+        tty: true #标准输入输出 （和stdin_open成对出现）
+        ports:
+            - "26380:26379"
+        links:
+            - redis-master-1
+        volumes:
+            - /Users/lichenjun/www/liuxin/redis1909/docker-compose/redis-sentinel/sentinel-1:/usr/src/redis/conf
+#        command: redis-sentinel  /usr/src/redis/conf/sentinel.conf
+        command: ['/usr/local/bin/redis-sentinel','/usr/src/redis/conf/sentinel.conf']
+
+    redis-sentinel-2:
+        image: teacher_redis
+        container_name: redis-sentinel-2
+        networks:
+            redis-network: #网络名称
+                ipv4_address: 192.168.3.22  #设置IP地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true # 标准输入输出
+        tty: true #标准输入输出 （和stdin_open成对出现）
+        ports:
+            - "26381:26379"
+        links:
+            - redis-master-1
+        volumes:
+            - /Users/lichenjun/www/liuxin/redis1909/docker-compose/redis-sentinel/sentinel-2:/usr/src/redis/conf
+#        command: redis-sentinel  /usr/src/redis/conf/sentinel.conf
+        command: ['/usr/local/bin/redis-sentinel','/usr/src/redis/conf/sentinel.conf']
+
+    redis-sentinel-3:
+        image: teacher_redis
+        container_name: redis-sentinel-3
+        networks:
+            redis-network: #网络名称
+                ipv4_address: 192.168.3.23  #设置IP地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true # 标准输入输出
+        tty: true #标准输入输出 （和stdin_open成对出现）
+        ports:
+            - "26382:26379"
+        links:
+            - redis-master-1
+        volumes:
+            - /Users/lichenjun/www/liuxin/redis1909/docker-compose/redis-sentinel/sentinel-3:/usr/src/redis/conf
+#        command: redis-sentinel  /usr/src/redis/conf/sentinel.conf #错误写法
+        command: ['/usr/local/bin/redis-sentinel','/usr/src/redis/conf/sentinel.conf']
+
+networks:
+    redis-network:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: "192.168.3.0/24"

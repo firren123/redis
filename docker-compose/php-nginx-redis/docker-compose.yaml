@@ -1,0 +1,21 @@
+#能够编排管理3个容器 php redis nginx
+version: "3.6"
+services:
+  nginx:
+    image: nginx2
+    container_name: nginx-compose
+    ports:
+      - "8089:80"
+    privileged: true
+    command: ["/usr/local/nginx/sbin/nginx","-g","daemon off;"]
+  php:
+    image: php:7.2
+    container_name: php-compose
+    ports:
+      - "9008:9000"
+
+  redis:
+    image: redis
+    container_name: redis-compose
+    ports:
+      - "6379:6379"
