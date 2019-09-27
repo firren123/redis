@@ -9,6 +9,7 @@ RUN mkdir -p /usr/src/redis \
       && mkdir -p /usr/src/redis/data \
       && mkdir -p /usr/src/redis/conf \
       && mkdir -p /usr/src/redis/log   \
+      && mkdir -p /usr/src/redis/sh   \
       && mkdir -p /var/log/redis
 
 

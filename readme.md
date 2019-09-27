@@ -168,3 +168,11 @@ docker inspect -f='{{.Name}} {{.NetworkSettings.IPAddress}} {{.HostConfig.PortBi
 密码登录
 127.0.0.1:6379> auth 123456
 
+
+# 安装docker-compose
+```sh
+sudo curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+```
+
+
+
