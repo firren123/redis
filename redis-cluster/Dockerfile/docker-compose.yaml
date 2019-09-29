@@ -1,0 +1,219 @@
+version: "3.6"
+services: #服务
+  master-1:
+    image: redis-cluster
+    container_name: cluster-1
+    environment:
+      - REALIP=39.96.196.246
+      - PORT=6391
+      - PORT2=16391
+    networks:
+       redis-network: #网络名称
+         ipv4_address: 192.168.4.11   #设置ip地址
+    working_dir: /usr/src/redis #工作目录
+    stdin_open: true
+    tty: true
+    ports:
+        - "6391:6379"
+        - "16391:16379"
+    volumes:
+      - /www/redis1909/redis-cluster/Dockerfile/redis/master-1:/usr/src/redis
+    entrypoint: # 
+       - /bin/bash
+       - /usr/src/sh/cluster.sh
+  master-2:
+      image: redis-cluster
+      container_name: cluster-2
+      environment:
+        - REALIP=39.96.196.246
+        - PORT=6392
+        - PORT2=16392
+      networks:
+         redis-network: #网络名称
+           ipv4_address: 192.168.4.12   #设置ip地址
+      working_dir: /usr/src/redis #工作目录
+      stdin_open: true
+      tty: true
+      ports:
+          - "6392:6379"
+          - "16392:16379"
+      volumes:
+        - /www/redis1909/redis-cluster/Dockerfile/redis/master-2:/usr/src/redis
+      entrypoint:
+         - /bin/bash
+         - /usr/src/sh/cluster.sh
+  master-3:
+      image: redis-cluster
+      container_name: cluster-3
+      environment:
+        - REALIP=39.96.196.246
+        - PORT=6393
+        - PORT2=16393
+      networks:
+         redis-network: #网络名称
+           ipv4_address: 192.168.4.13   #设置ip地址
+      working_dir: /usr/src/redis #工作目录
+      stdin_open: true
+      tty: true
+      ports:
+          - "6393:6379"
+          - "16393:16379"
+      volumes:
+        - /www/redis1909/redis-cluster/Dockerfile/redis/master-3:/usr/src/redis
+      entrypoint:
+         - /bin/bash
+         - /usr/src/sh/cluster.sh
+  master-4:
+        image: redis-cluster
+        container_name: cluster-4
+        environment:
+          - REALIP=39.96.196.246
+          - PORT=6394
+          - PORT2=16394
+        networks:
+           redis-network: #网络名称
+             ipv4_address: 192.168.4.14   #设置ip地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true
+        tty: true
+        ports:
+            - "6394:6379"
+            - "16394:16379"
+        volumes:
+          - /www/redis1909/redis-cluster/Dockerfile/redis/master-4:/usr/src/redis
+        entrypoint:
+           - /bin/bash
+           - /usr/src/sh/cluster.sh
+  slave-1:
+        image: redis-cluster
+        container_name: cluster-5
+        environment:
+          - REALIP=39.96.196.246
+          - PORT=6399
+          - PORT2=16399
+        networks:
+           redis-network: #网络名称
+             ipv4_address: 192.168.4.31   #设置ip地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true
+        tty: true
+        ports:
+            - "6399:6379"
+            - "16399:16379"
+        volumes:
+          - /www/redis1909/redis-cluster/Dockerfile/redis/slave-1:/usr/src/redis
+        entrypoint:
+           - /bin/bash
+           - /usr/src/sh/cluster.sh
+  slave-2:
+        image: redis-cluster
+        container_name: cluster-6
+        environment:
+          - REALIP=39.96.196.246
+          - PORT=6396
+          - PORT2=16396
+        networks:
+           redis-network: #网络名称
+             ipv4_address: 192.168.4.32   #设置ip地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true
+        tty: true
+        ports:
+            - "6396:6379"
+            - "16396:16379"
+        volumes:
+          - /www/redis1909/redis-cluster/Dockerfile/redis/slave-2:/usr/src/redis
+        entrypoint:
+           - /bin/bash
+           - /usr/src/sh/cluster.sh
+  slave-3:
+      image: redis-cluster
+      container_name: cluster-7
+      environment:
+        - REALIP=39.96.196.246
+        - PORT=6397
+        - PORT2=16397
+      networks:
+         redis-network: #网络名称
+           ipv4_address: 192.168.4.33   #设置ip地址
+      working_dir: /usr/src/redis #工作目录
+      stdin_open: true
+      tty: true
+      ports:
+          - "6397:6379"
+          - "16397:16379"
+      volumes:
+        - /www/redis1909/redis-cluster/Dockerfile/redis/slave-3:/usr/src/redis
+      entrypoint:
+         - /bin/bash
+         - /usr/src/sh/cluster.sh
+  slave-4:
+        image: redis-cluster
+        container_name: cluster-8
+        environment:
+          - REALIP=39.96.196.246
+          - PORT=6398
+          - PORT2=16398
+        networks:
+           redis-network: #网络名称
+             ipv4_address: 192.168.4.34   #设置ip地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true
+        tty: true
+        ports:
+            - "6398:6379"
+            - "16398:16379"
+        volumes:
+          - /www/redis1909/redis-cluster/Dockerfile/redis/slave-4:/usr/src/redis
+        entrypoint:
+           - /bin/bash
+           - /usr/src/sh/cluster.sh
+  master-5:
+        image: redis-cluster
+        container_name: cluster-9
+        environment:
+          - REALIP=39.96.196.246
+          - PORT=6400
+          - PORT2=16400
+        networks:
+           redis-network: #网络名称
+             ipv4_address: 192.168.4.25   #设置ip地址
+        working_dir: /usr/src/redis #工作目录
+        stdin_open: true
+        tty: true
+        ports:
+            - "6400:6379"
+            - "16400:16379"
+        volumes:
+          - /www/redis1909/redis-cluster/Dockerfile/redis/master-5:/usr/src/redis
+        entrypoint:
+           - /bin/bash
+           - /usr/src/sh/cluster.sh
+  slave-5:
+          image: redis-cluster
+          container_name: cluster-10
+          environment:
+            - REALIP=39.96.196.246
+            - PORT=6401
+            - PORT2=16401
+          networks:
+             redis-network: #网络名称
+               ipv4_address: 192.168.4.35   #设置ip地址
+          working_dir: /usr/src/redis #工作目录
+          stdin_open: true
+          tty: true
+          ports:
+              - "6401:6379"
+              - "16401:16379"
+          volumes:
+            - /www/redis1909/redis-cluster/Dockerfile/redis/slave-5:/usr/src/redis
+          entrypoint:
+             - /bin/bash
+             - /usr/src/sh/cluster.sh
+  #引用外部预先定义好的网段
+networks:
+    redis-network:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: "192.168.4.0/24"

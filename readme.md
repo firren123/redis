@@ -174,5 +174,269 @@ docker inspect -f='{{.Name}} {{.NetworkSettings.IPAddress}} {{.HostConfig.PortBi
 sudo curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
 ```
 
+# 手动创建redis集群
 
 
+```sh
+CLUSTER info : 打印集信息
+CLUSTER nodes : 列出集群当前已知的所有节点（node）的相关信息
+CLUSTER meet <ip> <port> : 将IP和port锁指定的节点添加到集群当中
+CLUSTER addslots <slot> [slot ...]: 将一个或多个槽（slot）指派（assign）给当前节点
+CLUSTER delslots <slot> [slot ...]: 移除一个或多个槽对当前节点的指派
+CLUSTER slots ：列出槽位，节点信息
+CLUSTER slaves <node_id>: 列出指定节点小米的从节点信息
+CLUSTER replicate <node_id> : 将当前节点设置为指定节点的从节点
+
+ 
+#提示篇
+CLUSTER saveconfig : 手动执行命令报错集群的配置文件，集群默认在配置修改的时候会自动保存配置文件
+CLUSTER keyslot <key> :列出key存放在哪个槽上
+CLUSTER flushslots : 移除指派给当前节点的所有槽，让当前节点变成一个没有指派任何槽的节点
+CLUSTER countkeysinslot <slot> : 返回槽目前包含的键值对数量
+CLUSTER getkeysinslot <slot> <count> : 返回count个槽中的键
+CLUSTER setslot <slot> node <node_id> : 将槽指派给指定的节点，如果槽已经指派给另一个节点，那么闲让另一个节点删除该槽，然后再进行指派
+CLUSTER setslot <slot> migrating <node_id> 将本节点的槽迁移到指定的节点中
+CLUSTER setslot <slot> importing <node_id> 从node_id指定的节点中导入槽到本节点
+CLUSTER setslot <slot> stable : 取消对槽的导入或迁移
+
+
+CLUSTER failover : 手动进行故障转移
+CLUSTER forget <node_id> :从集群中移除指定的节点，这样就无法完成握手，过期时为60s,60s后两节点又会继续完成握手
+CLUSTER reset [HARD|SOFT]: 重置集群信息，soft是清空其他节点的信息，但不修改自己的ID，hard还会修改自己的ID，hard还会修改自己的ID，不传该参数则使用soft方式。
+
+CLUSTER count-failure-reports <node_id> : 列出某个节点的故障报告的长度
+CLUSTER SET-CONFIG-EPOCH : 设置节点epoch，只有在节点加入集群前才能设置 
+
+```
+
+## 1 先握手
+```sh
+# 先进6391里面
+># redis-cli -a sixstar
+127.0.0.1:6379> cluster nodes
+aa57cf068ec165a6342f41219fc9e9d74143aec4 39.96.196.246:6397@16397 master - 0 1569738821000 5 connected
+02d10e92d78de2e7d1f3e0ae0478ac1db10027b9 39.96.196.246:6392@16392 master - 0 1569738821394 1 connected
+3d0dc656bf3a25b5b3bf53003df48e81f496c855 39.96.196.246:6391@16391 myself,master - 0 1569738819000 3 connected
+63da978af6a1d3a62e827b13661242e6f745e833 39.96.196.246:6399@16399 master - 0 1569738819389 6 connected
+bcaa11483ee4d1875a879f897e734652006a18df 39.96.196.246:6396@16396 master - 0 1569738817000 0 connected
+6303191227d6c41d81c03b5c707a2302ce29ced8 39.96.196.246:6398@16398 master - 0 1569738820000 7 connected
+1363d3366593f7bf24a8f13e4139c82b27f66919 39.96.196.246:6393@16393 master - 0 1569738819000 2 connected
+787a3c161416af97161a2f83e226aa7330eca7f4 39.96.196.246:6394@16394 master - 0 1569738819000 4 connected
+127.0.0.1:6379> 
+#数据保存在nodes-6379.conf 文件中  这个是配置文件中设计的
+```
+## 2 设置主从关系
+
+```sh
+# 6392当6391的从节点
+redis-cli -a sixstar -h 39.96.196.246 -p 6392 CLUSTER replicate 3d0dc656bf3a25b5b3bf53003df48e81f496c855
+# 6394当6393的从节点
+redis-cli -a sixstar -h 39.96.196.246 -p 6394 CLUSTER replicate 1363d3366593f7bf24a8f13e4139c82b27f66919
+# 6396当6397的从节点
+redis-cli -a sixstar -h 39.96.196.246 -p 6396 CLUSTER replicate aa57cf068ec165a6342f41219fc9e9d74143aec4
+# 6398当6399的从节点
+redis-cli -a sixstar -h 39.96.196.246 -p 6398 CLUSTER replicate 63da978af6a1d3a62e827b13661242e6f745e833
+
+127.0.0.1:6379> CLUSTER nodes
+bcaa11483ee4d1875a879f897e734652006a18df 39.96.196.246:6396@16396 slave aa57cf068ec165a6342f41219fc9e9d74143aec4 0 1569739676243 5 connected
+3d0dc656bf3a25b5b3bf53003df48e81f496c855 39.96.196.246:6391@16391 master - 0 1569739675000 3 connected
+1363d3366593f7bf24a8f13e4139c82b27f66919 39.96.196.246:6393@16393 master - 0 1569739673000 2 connected
+02d10e92d78de2e7d1f3e0ae0478ac1db10027b9 39.96.196.246:6392@16392 myself,slave 3d0dc656bf3a25b5b3bf53003df48e81f496c855 0 1569739672000 1 connected
+63da978af6a1d3a62e827b13661242e6f745e833 39.96.196.246:6399@16399 master - 0 1569739672000 6 connected
+787a3c161416af97161a2f83e226aa7330eca7f4 39.96.196.246:6394@16394 slave 1363d3366593f7bf24a8f13e4139c82b27f66919 0 1569739674238 4 connected
+aa57cf068ec165a6342f41219fc9e9d74143aec4 39.96.196.246:6397@16397 master - 0 1569739673236 5 connected
+6303191227d6c41d81c03b5c707a2302ce29ced8 39.96.196.246:6398@16398 slave 63da978af6a1d3a62e827b13661242e6f745e833 0 1569739675240 7 connected
+127.0.0.1:6379> 
+
+```
+## 3 分配虚拟槽  绑定槽（slot）位置
+> Redis集群把所有的数据映射到16384个槽中，每个key会映射为一个固定的槽，只有当节点分配了槽，才能响应和这些槽关联的键命令，通过CLUSTER addslots命令为节点分配槽
+> 只能一个一个添加
+> sh只能一个一个添加 bash可以批量添加
+>利用bash特性批量设置槽（slots），命令如下：
+
+```sh
+redis-cli -h 39.96.196.246 -p 6391 -a sixstar cluster addslots {0..4095}
+redis-cli -h 39.96.196.246 -p 6393 -a sixstar cluster addslots {4096..8190}
+redis-cli -h 39.96.196.246 -p 6399 -a sixstar cluster addslots {8191..12285}
+redis-cli -h 39.96.196.246 -p 6397 -a sixstar cluster addslots {12286..16383}
+
+127.0.0.1:6379> CLUSTER NODES
+aa57cf068ec165a6342f41219fc9e9d74143aec4 39.96.196.246:6397@16397 master - 0 1569740358835 5 connected 12286-16383
+02d10e92d78de2e7d1f3e0ae0478ac1db10027b9 39.96.196.246:6392@16392 slave 3d0dc656bf3a25b5b3bf53003df48e81f496c855 0 1569740356000 3 connected
+3d0dc656bf3a25b5b3bf53003df48e81f496c855 39.96.196.246:6391@16391 myself,master - 0 1569740357000 3 connected 0-4095
+63da978af6a1d3a62e827b13661242e6f745e833 39.96.196.246:6399@16399 master - 0 1569740357832 6 connected 8191-12285
+bcaa11483ee4d1875a879f897e734652006a18df 39.96.196.246:6396@16396 slave aa57cf068ec165a6342f41219fc9e9d74143aec4 0 1569740359836 5 connected
+6303191227d6c41d81c03b5c707a2302ce29ced8 39.96.196.246:6398@16398 slave 63da978af6a1d3a62e827b13661242e6f745e833 0 1569740357000 7 connected
+1363d3366593f7bf24a8f13e4139c82b27f66919 39.96.196.246:6393@16393 master - 0 1569740359000 2 connected 4096-8190
+787a3c161416af97161a2f83e226aa7330eca7f4 39.96.196.246:6394@16394 slave 1363d3366593f7bf24a8f13e4139c82b27f66919 0 1569740355000 4 connected
+127.0.0.1:6379> 
+
+#现在写一个数据会报错
+127.0.0.1:6379> set  a b
+(error) MOVED 15495 39.96.196.246:6397
+127.0.0.1:6379> 
+#要用集群的模式访问
+bash-5.0# redis-cli -a sixstar -c
+Warning: Using a password with '-a' option on the command line interface may not be safe. #不用管
+127.0.0.1:6379> set a b
+-> Redirected to slot [15495] located at 39.96.196.246:6397
+OK
+39.96.196.246:6397> set b b
+-> Redirected to slot [3300] located at 39.96.196.246:6391
+OK
+39.96.196.246:6391> set c c
+-> Redirected to slot [7365] located at 39.96.196.246:6393
+OK
+39.96.196.246:6393> set d d
+-> Redirected to slot [11298] located at 39.96.196.246:6399
+OK
+39.96.196.246:6399> 
+#自动存放在对应的集群节点上
+
+```
+
+## 4 移除虚拟槽
+>CLUSTER delslots <slot> [slot ...]: 移除一个或多个槽对当前节点的指派
+
+```sh
+39.96.196.246:6391> CLUSTER delslots 11298 
+OK
+39.96.196.246:6391> get d
+-> Redirected to slot [11298] located at 39.96.196.246:6399
+"d"
+39.96.196.246:6399> 
+#直接删除，是不管用的当有数据的时候
+#把slot=9000迁移到6391
+39.96.196.246:6399> CLUSTER SETSLOT 9000 migrating 3d0dc656bf3a25b5b3bf53003df48e81f496c855
+OK
+
+
+```
+
+
+
+
+# redis-trib.rb 创建集群环境
+
+## 1.创建集群
+> 一行命令创建集群
+
+帮助命令
+
+```sh
+bash-5.0# ./redis-trib.rb help
+Usage: redis-trib <command> <options> <arguments ...>
+   #创建集群
+  create          host1:port1 ... hostN:portN
+                  --replicas <arg>
+  #检查集群状态
+  check           host:port
+  #查看集群信息
+  info            host:port
+  fix             host:port
+                  --timeout <arg>
+  # 迁移命令             
+  reshard         host:port   集群内任意节点地址，用来获取整个集群信息
+                  --from <arg>  指定源节点的ID,如果有多个源节点，使用逗号分隔，如果是all源节点变为集群内所有主节点，在迁移过程中提示用户输入
+                  --to <arg> 需要迁移的目标节点的ID，目标节点只能填写一个，在迁移过程中提示用户输入
+                  --slots <arg> 需要迁移槽的总数量，在迁移过程中提示用户输入
+                  --yes 当打印出reshard执行计划时，是否需要用户输入yes确认后再执行reshard
+                  --timeout <arg> 控制每次migrate操作的超时时间，默认为60000毫秒
+                  --pipeline <arg> 控制每次批量迁移键的数量，默认为10
+  rebalance       host:port
+                  --weight <arg>
+                  --auto-weights
+                  --use-empty-masters
+                  --timeout <arg>
+                  --simulate
+                  --pipeline <arg>
+                  --threshold <arg>
+  #添加节点信息                 
+  add-node        new_host:new_port existing_host:existing_port
+                  --slave
+                  --master-id <arg>
+  #删除节点
+  del-node        host:port node_id
+  set-timeout     host:port milliseconds
+  call            host:port command arg arg .. arg
+  import          host:port
+                  --from <arg>
+                  --copy
+                  --replace
+  help            (show this help)
+
+For check, fix, reshard, del-node, set-timeout you can specify the host and port of any working node in the cluster.
+bash-5.0# 
+```
+
+```sh
+./redis-trib.rb create --replicas 1 39.96.196.246:6391 39.96.196.246:6392 39.96.196.246:6393 39.96.196.246:6394 39.96.196.246:6399 39.96.196.246:6396 39.96.196.246:6397 39.96.196.246:6398
+
+# --replicas 1  表示有一个从节点
+1,2,3,4 是主节点
+6，7，8，9是从节点
+1=> 6
+2=> 7
+3=> 8
+4=> 9
+
+```
+
+## 2. 节点伸缩
+
+### 1.节点扩展
+
+```sh
+# 添加新节点 
+# add-node [新节点] [原有节点]
+bash-5.0# ./redis-trib.rb add-node 39.96.196.246:6400 39.96.196.246:6391 
+
+bash-5.0# ./redis-trib.rb add-node 39.96.196.246:6401 39.96.196.246:6391
+
+# 移除 节点
+127.0.0.1:6379> CLUSTER RESET
+OK
+127.0.0.1:6379> CLUSTER NODES # 查看只有自己
+8920f53314108844eeee7745052af45ab2c8d052 39.96.196.246:6401@16401 myself,master - 0 1569746688000 0 connected
+127.0.0.1:6379> 
+
+#扩展迁移 redis-trib.rb reshard host:port --from <arg> --to <arg> --slots <arg> --yes --timeout <arg> --pipeline <arg>
+./redis-trib.rb reshard  39.96.196.246:6401
+
+#下线节点
+
+
+
+```
+
+### 2.节点收缩
+
+>下线节点需要把自己负责的槽迁移到其他节点，原理与之前节点扩容的迁移槽过程一致，但是过程收缩正好和扩容迁移方向相反，下线节点变为源节点，
+>其他主 节点变为目标节点，源节点需要把自身负责的4096个槽均匀地迁移到其他主节点上。
+>使用 redis-trib.rb reshard 命令完成槽迁移。由于每次执行 reshard 命令只能有一个目标节点，因此需要执行3次 reshard 命令 
+
+准备导出
+
+```sh
+# 1.线下迁移槽
+redis-trib.rb reshard host:port --from <arg> --to <arg> --slots <arg> --yes --timeout <arg> --pipeline <arg>
+./redis-trib.rb reshard  39.96.196.246:6401
+把槽均匀给其他节点就行了
+
+
+# 2.忘记节点 (删除 6400 6401)
+./redis-trib.rb del-node 39.96.196.246:6391  5a904932b8e8813d67989ab07df992a3b76fc05c
+./redis-trib.rb del-node 39.96.196.246:6391 8920f53314108844eeee7745052af45ab2c8d052
+
+bash-5.0# ./redis-trib.rb del-node 39.96.196.246:6391  5a904932b8e8813d67989ab07df992a3b76fc05c
+>>> Removing node 5a904932b8e8813d67989ab07df992a3b76fc05c from cluster 39.96.196.246:6391
+>>> Sending CLUSTER FORGET messages to the cluster...
+>>> SHUTDOWN the node.
+bash-5.0# ./redis-trib.rb del-node 39.96.196.246:6391 8920f53314108844eeee7745052af45ab2c8d052
+>>> Removing node 8920f53314108844eeee7745052af45ab2c8d052 from cluster 39.96.196.246:6391
+>>> Sending CLUSTER FORGET messages to the cluster...
+>>> SHUTDOWN the node.
+bash-5.0# 
+
+```
